@@ -1,0 +1,637 @@
+Adaptive Retrieval Augmented Generation with Graph Based Knowledge Structures and Multi Agent Orchestration: A Comprehensive Review and Proposed Framework
+
+Dr. Ankita V Karale, Aryan Yadav, Ashirwad Sharma,
+
+Hari Darade, Gaurav Malviya, Prof. Anmol Budhewar
+
+Department of Computer Engineering, Sandip Institute of Technology and Research Centre Mahiravani, Trimbak Road, Nashik – 422213, Maharashtra, India
+
+Abstract
+
+Large Language Models have become integral to enterprise knowledge systems, yet their propensity to produce factually ungrounded outputs termed hallucinations remains a critical obstacle in regulated deployments. Retrieval Augmented Generation grounds model outputs in external knowledge, but conventional vector based pipelines exhibit severe limitations in multi hop reasoning and deterministic verification. While recent literature explores Graph based RAG and Agentic RAG as independent solutions, their isolated deployments fail to resolve the underlying tradeoffs between structural rigidity and non deterministic overhead. This paper presents a comprehensive literature review of the current RAG landscape, mapping the architectural evolution from static retrieval to dynamic multi agent orchestration. A rigorous comparative analysis evaluates these paradigms across retrieval adaptivity, multi hop capability, and hallucination mitigation. Through critical analysis, this work identifies persistent research gaps regarding graph construction noise, static retrieval policies, and the self correction paradox in LLMs. To address these limitations, this paper introduces a technically rigorous Proposed Framework: An Adaptive Agentic GraphRAG architecture. The proposed methodology leverages a LangGraph state machine to orchestrate planner and verifier agents across a hybrid vector graph backend, introducing extrinsic algorithmic verification to solve the self correction paradox. This paper serves as a theoretical foundation and architectural proposal intended for future experimental validation in enterprise environments.
+
+Keywords: Retrieval Augmented Generation, Knowledge Graphs, GraphRAG, LLM Hallucination, Multi Agent Systems, Agentic RAG, Trustworthy AI, Research Proposal
+
+I. Introduction
+
+Automated reasoning and knowledge retrieval in enterprise workflows are poised for a paradigm shift due to the introduction of large language models. The hallucination problem [5] is a significant barrier to deploying LLMs in high-stakes applications such as healthcare, legal services, and financial compliance, because LLMs compress knowledge probabilistically rather than relationally. The integration of real-time artificial intelligence into clinical decision support systems marks a turning point in the evolution of modern healthcare [39]. Furthermore, these AI-driven models improve diagnostic accuracy and reduce the likelihood of human errors by providing evidence-based recommendations [40]. However, in these areas, a single factual error can have grave legal, financial, or medical consequences. LLMs hallucinate when they produce plausible but factually incorrect information that contradicts the source material or contains unverifiable information [22]. Current LLMs have hallucination rates higher than 27% on complex multi-step reasoning tasks, as stated by Zhang et al. [16], indicating that parametric memory alone is not sufficient for mission-critical applications.
+
+To ground generative outputs in factual reality, Retrieval-Augmented Generation was introduced [7], fundamentally shifting the architecture to a retrieve-then-generate pipeline. Standard RAG relies on dense vector embeddings and cosine similarity to retrieve relevant text chunks. While highly effective for surface-level semantic matching, vector retrieval operates in a geometric space devoid of logical structure [10]. Furthermore, naive document chunking often fragments context, leading to semantic dilution when the system attempts to synthesize an answer from isolated snippets. Consequently, standard RAG struggles with multi-hop reasoning—answering queries that require chaining scattered, yet logically connected facts across disparate documents [14].
+
+Two distinct architectural advancements have emerged in the literature to solve this reasoning deficit. First, GraphRAG [8] integrates Knowledge Graphs to map explicit entity-relationship triplets. This provides a deterministic, auditable map of relationships, enabling structural traversal that connects distant nodes of information. Second, Agentic RAG [1], [31] delegates retrieval and verification processes to autonomous, LLM-powered agents. These agents are capable of query decomposition, dynamic tool-use, and iterative reflection [28] to navigate complex information landscapes.
+
+But the real-world deployment shows severe friction despite these theoretical advances. Graph extraction remains very noisy and prone to hallucinated edges [20]. In contrast, autonomous agents often face the self-correction paradox, i.e., the absence of reliable self-evaluation of their own logic without external grounding [34]. And, executing uncoordinated multi-agent workflows incurs a high computational overhead and non-determinism [1]. Enterprise compliance requires strict auditability, which is fundamentally at odds with the unpredictable execution paths and infinite loops of unconstrained agentic frameworks.
+
+Motivation and Objectives: This research is motivated by the critical need for a deterministic, trustworthy, and structurally capable RAG architecture tailored for regulated enterprise environments. To bridge the gap between experimental AI capabilities and stringent production requirements, the objectives of this paper are to:
+
+Conduct a comprehensive literature review of evolving RAG architectures.
+
+Perform a comparative and critical analysis of existing methodologies, highlighting their operational bottlenecks.
+
+Identify unresolved research gaps at the intersection of Knowledge Graphs and multi-agent systems.
+
+Propose a novel, theoretically sound framework—Adaptive Agentic GraphRAG—designed specifically to overcome these limitations.
+
+The expected contribution of this paper is a detailed, citation-backed architectural proposal that resolves the tension between graph-based structural reasoning and agentic flexibility, setting the stage for future empirical validation and enterprise deployment.
+
+II. Literature Review
+
+The evolution of RAG architectures can be categorized into four distinct technical themes: Traditional Pipeline RAG, Graph Augmented RAG, Agentic Orchestration, and Hallucination Verification.
+
+A. Traditional and Advanced RAG Pipelines
+
+The basic RAG architecture is based on a sequence-to-sequence generator and a Dense Passage Retriever and was developed by Lewis et al. [7] and Borgeaud et al. [17]. This is systematically classified as Naive RAG by Gao et al. [11]. The main idea relies on semantic chunking and similarity search using embeddings to fetch related context. However, dense vectors embed text in a purely geometric space without an explicit logical connection, so this approach suffers from semantic dilution for highly nuanced queries.
+
+To tackle the precision issues of Naive RAG, Advanced RAG [11] proposes pre-retrieval methods such as Hypothetical Document Embeddings [27] and automatic query rewriting, combined with sophisticated post-retrieval reranking algorithms. These improved pipelines are good at retrieving single-hop facts and have low computational latency, but their static, single-pass nature limits their applicability to dynamic, reasoning-heavy tasks. Finally, the rigid pipeline cannot adjust its retrieval strategy or decompose questions according to the complexity of the query [14], indicating that it is not suitable for multi-step logical reasoning
+
+Fig. 1. Evolution of Retrieval Augmented Generation Architectures.
+
+B. GraphRAG and Structural Knowledge Retrieval
+
+To overcome the inherent limitations of unlinked geometric vector spaces, Knowledge Graphs (KGs) have been integrated into the RAG architectures. KGs encode data into explicit entity-relationship triplets, placing a deterministic logical structure on unstructured text. This paradigm shift allows to execute complex queries as exact graph traversals instead of probabilistic similarity searches [13].
+
+Edge et al. [8] proposed the Microsoft GraphRAG framework to tackle the problem of broad sense-making queries. The system uses hierarchical community detection, specifically the Leiden algorithm, to cluster highly connected subgraphs, and then applies map-reduce summarization to answer global, corpus-wide queries. They demonstrate significant improvements on multi-hop reasoning and full summarization, bridging between otherwise disconnected concepts that would be trapped in the ordinary vector database. In the same vein, QA GNN [18] and the hybrid intelligence roadmaps by Pan et al. [20] investigate the strong synergy between LLMs and Graph Neural Networks (GNNs), leveraging structural message-passing mechanisms to evaluate relational importance along with semantic relevance.
+
+However, the practical application of these systems is limited by significant technical challenges related to extraction noise. Because these systems rely on large language models (LLMs) for the initial knowledge compilation step, the subsequent automatic entity extraction step is particularly susceptible to hallucination - false relationships between nodes are introduced as edges, ultimately corrupting the subsequent traversal reasoning and undermining the quality of any subsequent grounding [8, 20].
+
+C. Agentic Orchestration and Iterative Retrieval
+
+To tackle the limitations of single-pass retrieval, the literature proposes a paradigm shift towards more flexible Agentic RAG [1]. In such frameworks, language model agents [25] go beyond pure generative models by employing query decomposition to plan, retrieve and evaluate their own results.
+
+The initial works in this space include Self RAG [28], where the authors train a language model to emit reflection tokens, which in turn can be used to trigger retrieval operations. Specifically, the model proactively identifies points within a generation where factual grounding may be beneficial. Yan et al. [29] propose Corrective RAG (CRAG), which uses a separate lightweight model to determine whether retrieval should be performed based on confidence scores during generation. If the model fails to find relevant context with sufficient confidence, CRAG employs an external search to augment the results. Finally, Trivedi et al. [14] propose Interleaving Retrieval with Chain of Thought, which effectively uses the step-wise reasoning paradigm to condition subsequent retrieval steps based on the model’s intermediate logic. Each approach was shown to be effective in different tasks, including multi-hop question answering.
+
+AutoGen [31], CrewAI [32], and LangGraph [12] are general-purpose frameworks designed to enable more sophisticated agent configurations involving multiple language models. Specifically, LangGraph [12] is an interesting framework, which represents dialogues as a state machine and enables the definition of individual nodes and connections as agentic operations. However, such approaches require careful tuning to ensure that the emergent behavior of the agent is predictable and deterministic. The flexibility of such frameworks comes at the cost of complexity, as iterative interactions quickly increase context lengths to impractical sizes and require careful orchestration to avoid runaway loops [1].Fig. 2. Agentic GraphRAG Workflow with Verification and Reflection Loop.
+
+D. Verification and the Self Correction Paradox
+
+In high-stakes RAG use cases, hallucinations are reduced through thorough verification mechanisms instead of relying solely on the base model’s accuracy. The next development in this space came from Khattab et al. [23], who introduced DSPy – a programming model which turns prompting into an automated and optimized process. By design, DSPy regards LLMs as declarative modules which can be fine-tuned via algorithmic prompts and weights in a search for optimal performance indicators. In parallel with this approach, the community developed evaluation standards which could audit the chains’ adherence to the prompt requirements. For example, RAGAS [9] introduced Context Precision, Context Recall, and Faithfulness benchmarks, while FActScore [25] utilized a similar set of criteria to assess the responses’ quality. Taken together, these evaluation tools form the basis of the necessary verification mechanisms for large-scale RAG implementations.
+
+Importantly, the ability to use LLMs for self-verification in iterative loops was challenged by Huang et al. [34], who demonstrated that the “self-correction paradox” prevented LLMs from acting as honest evaluators of their own reasoning. Their experiments showed that an LLM’s response to a modified prompt could change, but these changes did not necessarily indicate logical errors in the initial response. In other words, for self-correction to work, an LLM would require external information which could update its initial prompt (e.g., a hard-coded rule or a database query). This dynamic all but rendered iterative self-questioning as a “self-correction” mechanism ineffective for most practical applications [33]. Thus, in practice, RAG systems would require additional verification mechanisms.
+
+III. Comparative Analysis
+
+This section presents a structured evaluation of the paradigms discussed in the literature review.
+
+TABLE I: Retrieval Architecture and Scalability Profile
+
+Approach
+
+Knowledge Representation
+
+Multi Hop Capability
+
+Retrieval Adaptivity
+
+Computational Cost
+
+Scalability
+
+Primary Strength
+
+Primary Limitation
+
+Traditional RAG [7]
+
+Dense Embeddings
+
+Weak
+
+None
+
+Low
+
+High
+
+Low latency, simple infrastructure
+
+Fails on cross document reasoning
+
+Advanced RAG [11]
+
+Embeddings + Metadata
+
+Moderate
+
+Pre retrieval rewrite
+
+Medium
+
+High
+
+Better contextual precision
+
+Remains a rigid, single pass pipeline
+
+GraphRAG [8]
+
+KGs Triplets
+
+Strong
+
+None
+
+High
+
+Moderate
+
+Excels at global corpus summarization
+
+Susceptible to graph extraction noise
+
+Self RAG [28]
+
+Dense Embeddings
+
+Moderate
+
+Token triggered
+
+Medium
+
+High
+
+Dynamic retrieval execution
+
+Relies heavily on fine tuned token accuracy
+
+CRAG [29]
+
+Embeddings + Web
+
+Moderate
+
+Binary Fallback
+
+Medium
+
+High
+
+Recovers from poor initial retrieval
+
+Injects uncontrolled web data sources
+
+IRCoT [14]
+
+Dense Embeddings
+
+Strong
+
+Reasoning guided
+
+Medium-High
+
+Moderate
+
+High performance on complex QA
+
+Cascading errors from early reasoning steps
+
+Agentic RAG [1], [31]
+
+Flexible / Dual
+
+Strong
+
+Multi policy Planning
+
+Very High
+
+Low-Moderate
+
+Highly adaptive and self correcting
+
+High token cost; coordination overhead
+
+TABLE II: Hallucination Mitigation and Verification Mechanisms
+
+Approach
+
+Verification Method
+
+Self Correction Paradigm
+
+Error Memory
+
+Explainability
+
+Key Vulnerability
+
+Traditional RAG [7]
+
+None
+
+None
+
+None
+
+None
+
+Blind to retrieval failures
+
+GraphRAG [8]
+
+None explicit
+
+None
+
+None
+
+Path traversal is inspectable
+
+Triplet hallucination becomes systemic
+
+CRAG [29]
+
+Confidence Scorer
+
+Partial Web fallback
+
+None
+
+Evaluator threshold is logged
+
+Same model verification bias
+
+DSPy [23]
+
+Prompt Compiler
+
+Algorithmic tuning
+
+None
+
+Optimization trace available
+
+Metric overfitting
+
+Agentic RAG [28], [31]
+
+Algorithmic / LLM Judge
+
+Cyclic Iterative Loop
+
+State based memory
+
+Full agent interaction trace
+
+The Self Correction Paradox [34]
+
+Analytical Discussion: Tables I and II illustrate a fundamental tradeoff in modern knowledge systems. Static vector architectures [7], [11] are highly scalable but computationally blind to logic. Conversely, GraphRAG [8] imposes logic but is computationally expensive to construct and query globally. Agentic systems [31] solve the adaptivity problem by orchestrating tools dynamically, but as shown in Table II, their reliance on intrinsic LLM judges exposes them to the self correction paradox [34]. The comparative data strongly indicates that a unified architecture must combine the structural determinism of KGs with the adaptive routing of agents, strictly gated by extrinsic algorithmic verification.
+
+IV. Critical Analysis of Existing Literature
+
+A critical evaluation of the literature reveals that isolated advancements in retrieval technology fail to solve the enterprise hallucination problem holistically.
+
+The Failure of Static Retrieval: Lewis et al. [7] and Gao et al. [11] established vector based RAG as the industry standard. However, cosine similarity calculates spatial proximity in a latent space, which is fundamentally agnostic to causality, hierarchy, and logical dependency. When an enterprise query requires joining facts across documents e.g., matching a policy change in Document A to a patient record in Document B, vector retrieval fragments the context, leaving the LLM to hallucinate the missing links [14].
+
+The Graph Extraction Bottleneck: Edge et al. [8] demonstrated that GraphRAG significantly outperforms vector systems in comprehensiveness. Yet, critically analyzing their methodology reveals a heavy reliance on LLMs to perform the initial entity relationship extraction. Pan et al. [20] note that LLMs frequently hallucinate edges during this phase. Because the graph acts as the fundamental ground truth during retrieval, extraction noise is permanently codified into the system's architecture, undermining the entire premise of factual grounding.
+
+The Complexity of Agentic Orchestration: The transition to Agentic RAG, championed by frameworks like AutoGen [31] and LangGraph [12], attempts to solve complex queries through workflow delegation. While Singh et al. [1] show that agents outperform fixed policies, the unconstrained nature of multi agent dialogue often leads to circular reasoning and infinite loops. Without a deterministic state machine to enforce execution boundaries, the computational cost token expenditure grows exponentially [12], rendering it unviable for high volume enterprise deployments.
+
+The Verification Deficit: The most critical flaw in current agentic literature is the reliance on self reflection [33]. Huang et al. [34] empirically proved that LLMs struggle to detect their own reasoning errors. An agent that hallucinates a fact is highly likely to approve that same hallucination during its verification step. Therefore, agent architectures that do not incorporate extrinsic, deterministic verification scoring such as RAGAS [9] are fundamentally flawed for regulated applications.
+
+V. Research Gap Analysis
+
+Based on the critical analysis, this paper identifies the following major, unresolved research gaps in the RAG literature:
+
+Fig. 3. Mapping of Research Gaps to Proposed Solutions in the Adaptive GraphRAG Framework.
+
+Gap 1: Disjointed Modality Routing
+
+Literature Origin: Identified by Trivedi et al. [14] and Singh et al. [1].
+
+Description: Current systems force all queries through either a vector database [7] or a knowledge graph [8].
+
+Consequence: Simple queries waste massive compute traversing KGs, while complex queries fail due to vector fragmentation.
+
+Research Opportunity: There is a critical need for an intelligent policy selection module that dynamically routes queries to the optimal backend based on semantic complexity.
+
+Gap 2: The Self Correction Paradox in Agent Workflows
+
+Literature Origin: Exposed by Huang et al. [34].
+
+Description: Agentic frameworks [28], [31] rely on intrinsic LLM self reflection to verify outputs.
+
+Consequence: Hallucinations bypass the verification stage because the LLM evaluator shares the same biases and blind spots as the LLM generator.
+
+Research Opportunity: The integration of extrinsic, non LLM algorithmic evaluators e.g., leveraging FActScore [25] or RAGAS [9] metrics directly into the agentic cyclic execution loop.
+
+Gap 3: Unbounded Non Determinism in Multi Agent Orchestration
+
+Literature Origin: Discussed by Chase et al. [12] and Wu et al. [31].
+
+Description: Agent conversations in frameworks like AutoGen can easily derail, leading to context bloat and failure to terminate.
+
+Consequence: Unpredictable latency and computational costs that violate enterprise SLAs.
+
+Research Opportunity: Utilizing strict, state machine driven orchestration via Directed Acyclic Graphs or stateful cycles to enforce rigid execution paths and retry limits on autonomous agents.
+
+Gap 4: Graph Construction and Temporal Invalidation Noise
+
+Literature Origin: Identified by Edge et al. [8] and Cai et al. [30].
+
+Description: KGs treat extracted knowledge as permanently true, ignoring the temporal decay of facts.
+
+Consequence: Obsolete information overrides current documents, leading to temporal hallucinations.
+
+Research Opportunity: Enhancing graph retrievers with temporal metadata awareness.
+
+VI. Proposed Framework: Adaptive Agentic GraphRAG
+
+Methodological Proposal: The following framework is a theoretical architectural design derived directly from the literature limitations identified in Section V. It constitutes the proposed methodology for future experimental implementation and validation.
+
+To address the identified research gaps, this paper proposes Adaptive Agentic GraphRAG, a state machine orchestrated multi agent system operating over a hybrid knowledge backend. The framework completely decouples the generation of knowledge from its verification and dynamically adjusts its retrieval strategy based on query structure.
+
+A. Design Objectives
+
+Based on the literature review, the proposed framework is designed to satisfy the following objectives:
+
+Adaptive retrieval: Dynamically routing queries to the most efficient data modality.
+
+Reliable multi hop reasoning: Leveraging explicit graph structures rather than latent vectors for complex queries.
+
+Reduced hallucination: Enforcing extrinsic algorithmic verification.
+
+Explainability: Logging every step of the decision and retrieval process.
+
+Enterprise scalability: Preventing infinite loops and controlling computational overhead.
+
+Modular orchestration: Decoupling planning, generation, and verification into distinct state driven nodes.
+
+B. Architectural Overview
+
+Fig. 4. Proposed Adaptive GraphRAG Framework with Multi Agent Orchestration.
+
+The proposed framework is orchestrated using a strict LangGraph style state machine [12] to ensure deterministic boundaries on agent execution. The architecture consists of three core phases: (1) Query Planning & Routing, (2) Hybrid Retrieval Execution, and (3) Generation & Extrinsic Verification.
+
+C. Detailed Module Justification
+
+1. User Query Interface
+
+Purpose: Ingests the initial natural language prompt and maintains session context.
+
+Addressed Limitation: Semantic ambiguity in user inputs.
+
+Literature Source: Gao et al. [11].
+
+Proposed Solution: Implements pre retrieval query rewriting to expand acronyms and standardize terminology before hitting the agents.
+
+2. Planner Agent
+
+Purpose: Analyzes the rewritten query to break it down into atomic sub tasks.
+
+Addressed Limitation: Static, single pass pipeline failures on complex logic.
+
+Literature Source: Lewis et al. [7], Singh et al. [1].
+
+Proposed Solution: Utilizes Chain of Thought prompting [21] to explicitly map out the logical steps required to answer the query, executing Trivedi et al.'s [14] assertion that reasoning must precede retrieval.
+
+3. Policy Selection Module
+
+Purpose: Dynamically routes each atomic sub task to the optimal data modality.
+
+Addressed Limitation: The One Size Fits All modality routing.
+
+Literature Source: Pan et al. [20], Singh et al. [1].
+
+Proposed Solution: Acts as a classification router. If a sub task requires factual lookup e.g., What is the revenue, it routes to the Vector Retriever. If it requires relationship mapping e.g., Who owns the subsidiary that, it routes to the Graph Retriever. This optimizes computational cost.
+
+4. Hybrid Retriever Vector + Graph Sub Modules
+
+Purpose: Executes the retrieval queries against the underlying databases.
+
+Addressed Limitation: The tradeoff between semantic similarity and structural reasoning.
+
+Literature Source: Edge et al. [8], Lewis et al. [7].
+
+Proposed Solution:
+
+Vector Database & Retriever: Houses dense embeddings e.g., FAISS or Milvus for rapid semantic search.
+
+Knowledge Graph Database & Retriever: Houses Neo4j triplets. The Graph Retriever Cypher generation extract explicit subgraphs [13]. Incorporates temporal edge filtering to address Graph Quality issues identified by Cai et al. [30].
+
+5. Generator Agent
+
+Purpose: Synthesizes the retrieved context from both vector and graph sources into a coherent response.
+
+Addressed Limitation: LLM generation without structural context.
+
+Literature Source: Borgeaud et al. [17].
+
+Proposed Solution: Instructed strictly to ground its response only in the provided context window, utilizing the explicit logical paths provided by the Graph Retriever to construct its argument.
+
+6. Verifier Agent & Reflection Loop
+
+Purpose: Critiques the Generator's output and determines if a retry is necessary.
+
+Addressed Limitation: The Self Correction Paradox and intrinsic LLM bias.
+
+Literature Source: Huang et al. [34].
+
+Proposed Solution: This is the most critical proposed module. The Verifier Agent is not simply another LLM prompt asking Is this correct. Instead, the Verifier executes extrinsic algorithmic evaluation. It computes RAGAS [9] metrics Faithfulness and Answer Relevance programmatically against source context. If the Faithfulness score drops below a predefined tolerance threshold, triggers, Reflection Loop. The Reflection Loop extracts the contradictory claim, feeds it back to the Planner Agent as a constraint, and forces a preretrieval.
+
+7. Memory Module
+
+Purpose: Stores the state of current iterations, retrieved context, and failed attempts.
+
+Addressed Limitation: Cyclic execution amnesia and infinite loops.
+
+Literature Source: Chase et al. [12], Madaan et al. [33].
+
+Proposed Solution: Maintains a strict log of previous retrieval paths to prevent the Planner Agent from repeating failed searches during a Reflection Loop.
+
+8. LangGraph State Machine
+
+Purpose: Orchestrates the entire workflow with enforced structural boundaries.
+
+Addressed Limitation: Unbounded non determinism in multi agent orchestration.
+
+Literature Source: Wu et al. [31].
+
+Proposed Solution: Encodes the framework as a deterministic graph where nodes are agents Planner, Generator, Verifier and edges are conditional state transitions. The state machine enforces a maximum reflection depth to bound execution. If the Verifier fails the output repeatedly up to the limit, the State Machine overrides the loop, routes to the Final Response Generator, and outputs a deterministic fallback response, thereby ensuring compliance with enterprise reliability standards without risking infinite loops.
+
+D. Mathematical Implementation Model
+
+The mathematical architecture of the framework is governed by three primary equations that        standardize query routing, temporal graph pruning, and extrinsic factual verification:
+
+Query Complexity & Topology Routing Model:
+
+To dynamically route incoming queries without manual heuristics, the system calculates a multi hop complexity score C(Q)  [0, 1] using a logistic sigmoid transform over the embedded query vector E(Q) combined with extracted entity depth :
+
+where:
+
+C(Q) ∈ [0, 1] is the scalar query complexity score.
+
+E(Q) ∈ Rd is the d-dimensional semantic dense query embedding vector.
+
+wc ∈ Rd is a learnable projection weight vector.
+
+(.)T: Vector transpose operation converting weight wc into a 1 X d row vector.
+
+bc ∈ R is a scalar bias term.
+
+EQ ∈ Z+ is the count of explicit named entities detected in query Q.
+
+depthQ ∈ Z+ is the estimated relation traversal depth required.
+
+DQ ∈ R+ is the local subgraph density around the detected entities.
+
+The dynamic routing decision P(Q) selects the retrieval backend based on threshold vectors T1, T2:
+
+where:
+
+P (Q) denotes the selected routing policy.
+
+τ1 is the lower threshold isolating single hop lookups.
+
+τ2 is the upper threshold triggering structural graph traversal
+
+Temporal Decay Graph Pruning Model: To mitigate graph extraction noise and temporal invalidation, each extracted knowledge graph edge e = (u, v) is weighted using an exponential temporal decay function that scales structural confidence  against age :
+
+where:
+
+e = (u, v) ∈ EG: Directed edge connecting node u to node v in edge set EG
+
+w(e, t) ∈ [0, 1] is the time decayed weight at current system execution time t0.
+
+w0 ∈ (0, 1) is the initial extraction confidence weight.
+
+λ > 0 is the temporal decay rate constant.
+
+t0 ∈ R+ : Continuous epoch real timestamp at current system execution time.
+
+te ∈ R+ : Continuous epoch real timestamp recording factual edge origin time.
+
+(t0 - te) ∈ R0 : Non negative real time elapsed since fact creation.
+
+τdecay ∈ (0, 1)$: Pruning scalar threshold below which weak edges are removed.
+
+Edges falling below confidence threshold τdecay are dynamically filtered out prior to response generation.
+
+Composite Extrinsic Verification Score Model: To resolve the Self Correction Paradox, candidate generation Y is evaluated against context K using a weighted extrinsic composite matrix Stotal:
+
+where:
+
+Stotal ∈ [0, 1] is the composite factual verification score.
+
+Sfaith(Y, K) ∈ [0, 1] measures programmatic context faithfulness via RAGAS and FActScore.
+
+Sans_rel(Y, Q)  ∈ [0, 1] measures answer relevance relative to prompt Q.
+
+Stemp(K) ∈ [0, 1] measures the average temporal validity of retrieved context K.
+
+α, β, γ ∈ [0, 1]   are   hyperparameter normalization coefficients.
+
+E. Algorithmic Mechanics & Implementation Strategy
+
+Rather than executing a rigid sequential pipeline, the framework is implemented as a stateful Graph Orchestration Engine leveraging LangGraph state machines.
+
+State Engine & Graph Initialization: The core algorithm operates over a shared global state schema S = {Qrewritten, Kfused, Ygen, Stotal, Nretry}. Upon ingesting a user query, the state engine invokes pre retrieval normalization nodes before passing control to the Planner Agent.
+
+Dynamic Modality Routing: The algorithm routes state transitions dynamically: queries classified under vector mode trigger dense semantic lookups via ChromaDB, graph queries execute parameterised Cypher queries across Neo4j, and hybrid queries combine results using Reciprocal Rank Fusion.
+
+Extrinsic Gating & Reflection Mechanics: Response generation is passed to an extrinsic Verifier Node running programmatic RAGAS and FActScore evaluator suites. If StotalTverify, the state machine terminates and emits the grounded answer. If verification fails, the Reflection Node updates the retry counter Nretry, appends negative feedback constraints to S, and loops back to the Planner Node. Bounded latency is guaranteed by hard stopping execution at Nmax retries and returning a deterministic fall back context.
+
+VII. Expected Advantages of the Proposed Framework
+
+While empirical validation is reserved for future work, the architectural design of the Adaptive Agentic GraphRAG framework is designed to offer several theoretical advantages over existing baseline systems [7], [8], [28]:
+
+Deterministic Hallucination Mitigation: By explicitly addressing the self correction paradox [34] through the integration of extrinsic algorithmic gating Verifier Agent, the proposed framework aims to provide a reliable mechanism for trapping ungrounded claims before they reach the user.
+
+Optimized Computational Efficiency: The Policy Selection Module prevents the framework from executing expensive graph community summarization [8] for simple semantic queries, reserving high cost operations only for multi hop necessity.
+
+Bounded Agent Execution: The use of a strict state machine [12] ensures that enterprise Service Level Agreements regarding latency can be met, as the multi agent dialogue is structurally prevented from entering infinite hallucination loops [31].
+
+Enhanced Explainability: Every step of the LangGraph execution from the Planner's CoT reasoning to the Graph Retriever's Cypher query and the Verifier's algorithmic score is logged in the Memory Module. This provides a complete, auditable trace for enterprise compliance frameworks e.g., EU AI Act [38].
+
+VIII. Conclusion
+
+This paper presented a comprehensive review of Retrieval Augmented Generation, tracing its evolution from static, semantic only vector pipelines to dynamic, self correcting multi agent GraphRAG architectures. Critical analysis of the literature identified that isolated improvements in graph structures or agent orchestration fail to overcome fundamental tradeoffs regarding non determinism, graph extraction noise, and the critical inability of LLMs to self correct reasoning errors without extrinsic feedback.
+
+To bridge these research gaps, this paper proposed the Adaptive Agentic GraphRAG framework. By integrating a hybrid vector graph retrieval backend with a state machine driven multi agent orchestrator, the proposed architecture dynamically routes queries to their optimal modality and enforces strict, algorithmic hallucination verification.
+
+The proposed framework is intended for future implementation and experimental validation. This paper establishes the theoretical foundation, literature analysis, and architectural design necessary to construct next generation, trustworthy enterprise AI systems capable of deep reasoning without sacrificing deterministic safety.
+
+References
+
+[1] A. Singh et al., "Agentic Retrieval Augmented Generation: A Survey on Agentic RAG," arXiv:2501.09136, Jan. 2025.
+
+[2] P. Patil et al., "FinanceBench: A New Era to Evaluate Financial Context Aware Question Answering," arXiv:2311.11944, 2023.
+
+[3] Y. Hu et al., "RAGTruth: A Hallucination Corpus for Developing Trustworthy Retrieval Augmented Language Models," Proc. ACL, pp. 1045-1060, 2024.
+
+[4] M. Jin et al., "Search-R1: Reinforcement Learning for Agentic Retrieval Augmented Generation," arXiv:2501.12154, 2025.
+
+[5] H. Alkaissi and S. I. McFarlane, "Artificial Hallucinations in ChatGPT: Implications in Scientific Writing," Cureus, vol. 15, no. 2, Feb. 2023.
+
+[6] S. M. Tonmoy et al., "A Comprehensive Survey of Hallucination Mitigation Techniques in Large Language Models," arXiv:2401.01313, 2024.
+
+[7] P. Lewis et al., "Retrieval Augmented Generation for Knowledge Intensive NLP Tasks," NeurIPS, vol. 33, pp. 9459–9471, 2020.
+
+[8] D. Edge et al., "From Local to Global: A Graph RAG Approach to Query Focused Summarization," arXiv:2404.16130, Apr. 2024.
+
+[9] S. Es et al., "RAGAS: Automated Evaluation of Retrieval Augmented Generation," arXiv:2309.15217, 2023.
+
+[10] S. Ji et al., "A Survey on Knowledge Graphs: Representation, Acquisition, and Applications," IEEE Trans. Neural Networks and Learning Systems, vol. 33, no. 2, pp. 494–514, 2022.
+
+[11] Y. Gao et al., "Retrieval Augmented Generation for Large Language Models: A Survey," ACM Computing Surveys, vol. 56, no. 7, Art. 182, pp. 1–24, May 2024.
+
+[12] H. Chase et al., "LangGraph: Multi Agent Workflows," LangChain, 2024. [Online]. Available: https://github.com/langchain-ai/langgraph
+
+[13] I. Robinson, J. Webber, and E. Eifrem, Graph Databases, 2nd ed. O'Reilly Media, 2023.
+
+[14] H. Trivedi et al., "Interleaving Retrieval with Chain of Thought Reasoning for Multi Hop QA," Proc. 61st ACL, pp. 6012–6025, 2023.
+
+[15] G. Mialon et al., "Augmented Language Models: A Survey of Mechanisms, Tools, and System Verification Layers," Trans. Machine Learning Research, vol. 2024, no. 3, pp. 412–445, Feb. 2024.
+
+[16] Y. Zhang et al., "Siren's Song in the AI Ocean: A Survey on Hallucination in Large Language Models," Computational Linguistics, 2025.
+
+[17] S. Borgeaud et al., "Improving Language Models by Retrieving from Trillions of Tokens," ICML, PMLR, pp. 2206–2240, 2022.
+
+[18] M. Yasunaga et al., "QA-GNN: Reasoning with Language Models and Knowledge Graphs for Question Answering," Proc. NAACL, pp. 535–546, 2021.
+
+[19] X. Wang et al., "Self Consistency Improves Chain of Thought Reasoning in Language Models," ICLR, 2023.
+
+[20] S. Pan et al., "Unifying Large Language Models and Knowledge Graphs: A Roadmap for Hybrid Intelligence," IEEE Trans. KDE, vol. 36, no. 8, pp. 4012–4029, Aug. 2024.
+
+[21] J. Wei et al., "Chain of Thought Prompting Elicits Reasoning in Large Language Models," NeurIPS, vol. 35, pp. 24824–24837, 2022.
+
+[22] Z. Ji et al., "Survey of Hallucination in Natural Language Generation," ACM Computing Surveys, vol. 55, no. 12, pp. 1–38, Mar. 2023.
+
+[23] O. Khattab et al., "DSPy: Compiling Declarative Language Model Calls into State of the Art Pipelines," ICLR, 2024.
+
+[24] S. Wu et al., "Graph Neural Networks in Recommender Systems: A Survey," ACM Computing Surveys, vol. 53, no. 2, pp. 1–37, 2020.
+
+[25] S. Min et al., "FActScore: Fine grained Atomic Evaluation of Factual Precision in Long Form Text Generation," Proc. EMNLP, pp. 12076–12091, 2023.
+
+[26] N. F. Liu et al., "Lost in the Middle: How Language Models Use Long Contexts," Trans. ACL, vol. 12, pp. 157–173, 2024.
+
+[27] L. Gao et al., "Precise Zero Shot Dense Retrieval without Relevance Labels (HyDE)," Proc. ACL, pp. 1762–1777, 2023.
+
+[28] A. Asai et al., "Self RAG: Learning to Retrieve, Generate, and Critique through Self Reflection," ICLR, 2024.
+
+[29] S. Yan et al., "Corrective Retrieval Augmented Generation (CRAG)," arXiv:2401.15884, 2024.
+
+[30] C. Cai et al., "Temporal Knowledge Graph Completion: A Survey," arXiv:2201.08236, 2022.
+
+[31] Q. Wu et al., "AutoGen: Enabling Next Gen LLM Applications via Multi Agent Conversation," arXiv:2308.08155, 2023.
+
+[32] J. Moura, "CrewAI: Framework for Orchestrating Role Playing Autonomous AI Agents," GitHub/CrewAI, 2024.
+
+[33] A. Madaan et al., "Self Refine: Iterative Refinement with Self Feedback," NeurIPS, vol. 36, 2023.
+
+[34] J. Huang et al., "Large Language Models Cannot Self Correct Reasoning Yet," ICLR, 2024.
+
+[35] S. Lin et al., "TruthfulQA: Measuring How Models Mimic Human Falsehoods," Proc. ACL, pp. 3214–3252, 2022.
+
+[36] Z. Yang et al., "HotpotQA: A Dataset for Diverse, Explainable Multi hop Question Answering," Proc. EMNLP, pp. 2369–2380, 2018.
+
+[37] NIST, "Artificial Intelligence Risk Management Framework (AI RMF 1.0)," National Institute of Standards and Technology, Jan. 2023.
+
+[38] European Parliament, "Regulation (EU) 2024/1689: Artificial Intelligence Act," Official Journal of the European Union, Jul. 2024.
+
+[39] K. K. Veernapu, B. K. Patil, A. S. Tharayil, C. L. Sindhura, A. Andy, A. Budhewar, et al., "Real-time AI in Clinical Decision Support: Bridging Research and Practice," IGI Global, 2026.
+
+[40] V. R. Gosavi, M. Chavan, S. M. Joshi, A. V. Karale, B. K. Patil, and Y. K. Rathore, "Developing AI-Based Clinical Decision Support Systems for Drug Suggestions: Enhancing Patient Outcomes," Research Journal of Pharmacy and Technology, vol. 18, no. 4, pp. 1854-1860, 2025.
+
+Acknowledgments. The authors are grateful to Dr. Ankita V Karale for advising this review and to Prof. Anmol Budhewar for coordination support at the Department of Computer Engineering, Sandip Institute of Technology and Research Centre. This work is submitted toward the Bachelor of Engineering degree Computer Engineering, Academic Year 2026–27, under Savitribai Phule Pune University.

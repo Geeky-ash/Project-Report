@@ -1,0 +1,15 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary Word / Office locks
+~$*
+*.tmp
+
+# Test artifacts
+test_*.docx
+test_*.png
+test_*.py
+test_dot
+*.log
